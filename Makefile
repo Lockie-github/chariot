@@ -14,7 +14,8 @@
 # target
 ######################################
 TARGET = PWM_zet6
-
+ALLCSRC = 
+ALLINC = 
 
 ######################################
 # building variables
@@ -23,6 +24,7 @@ TARGET = PWM_zet6
 DEBUG = 1
 # optimization
 OPT = -Og
+include ARM_SEGGER_RTT/segger_rtt.mk
 
 
 #######################################
@@ -60,11 +62,11 @@ Core/Src/system_stm32f1xx.c
 ASM_SOURCES =  \
 startup_stm32f103xe.s
 
-
+MCU_ID = STM32F103ZE
 #######################################
 # binaries
 #######################################
-PREFIX = arm-none-eabi-
+PREFIX =  /opt/gcc-arm-none-eabi-9-2020-q2-update/bin/arm-none-eabi-
 # The gcc compiler bin path can be either defined in make command via GCC_PATH variable (> make GCC_PATH=xxx)
 # either it can be added to the PATH environment variable.
 ifdef GCC_PATH
@@ -111,12 +113,14 @@ AS_INCLUDES =
 
 # C includes
 C_INCLUDES =  \
--ICore/Inc \
--IDrivers/STM32F1xx_HAL_Driver/Inc \
--IDrivers/STM32F1xx_HAL_Driver/Inc/Legacy \
--IDrivers/CMSIS/Device/ST/STM32F1xx/Include \
--IDrivers/CMSIS/Include
-
+Core/Inc \
+Drivers/STM32F1xx_HAL_Driver/Inc \
+Drivers/STM32F1xx_HAL_Driver/Inc/Legacy \
+Drivers/CMSIS/Device/ST/STM32F1xx/Include \
+Drivers/CMSIS/Include
+C_SOURCES += $(ALLCSRC)
+C_INCLUDES += $(ALLINC)
+C_INCLUDES := $(patsubst %,-I%,$(C_INCLUDES))
 
 # compile gcc flags
 ASFLAGS = $(MCU) $(AS_DEFS) $(AS_INCLUDES) $(OPT) -Wall -fdata-sections -ffunction-sections
@@ -158,20 +162,20 @@ OBJECTS += $(addprefix $(BUILD_DIR)/,$(notdir $(ASM_SOURCES:.s=.o)))
 vpath %.s $(sort $(dir $(ASM_SOURCES)))
 
 $(BUILD_DIR)/%.o: %.c Makefile | $(BUILD_DIR) 
-	$(CC) -c $(CFLAGS) -Wa,-a,-ad,-alms=$(BUILD_DIR)/$(notdir $(<:.c=.lst)) $< -o $@
+	@$(CC) -c $(CFLAGS) -Wa,-a,-ad,-alms=$(BUILD_DIR)/$(notdir $(<:.c=.lst)) $< -o $@
 
 $(BUILD_DIR)/%.o: %.s Makefile | $(BUILD_DIR)
-	$(AS) -c $(CFLAGS) $< -o $@
+	@$(AS) -c $(CFLAGS) $< -o $@
 
 $(BUILD_DIR)/$(TARGET).elf: $(OBJECTS) Makefile
-	$(CC) $(OBJECTS) $(LDFLAGS) -o $@
+	@$(CC) $(OBJECTS) $(LDFLAGS) -o $@
 	$(SZ) $@
 
 $(BUILD_DIR)/%.hex: $(BUILD_DIR)/%.elf | $(BUILD_DIR)
-	$(HEX) $< $@
+	@$(HEX) $< $@
 	
 $(BUILD_DIR)/%.bin: $(BUILD_DIR)/%.elf | $(BUILD_DIR)
-	$(BIN) $< $@	
+	@$(BIN) $< $@	
 	
 $(BUILD_DIR):
 	mkdir $@		
@@ -188,3 +192,14 @@ clean:
 -include $(wildcard $(BUILD_DIR)/*.d)
 
 # *** EOF ***
+flash: all
+	@echo "Uploading to firmware..."
+	-JLinkExe  -Device $(MCU_ID) -CommandFile ./flash.jlink
+
+erase:
+	@echo "Erase chip..."
+	-JLinkExe  -Device $(MCU_ID) -CommandFile ./erase.jlink
+
+run:
+	@echo "Try to run MCU"
+	-JLinkExe  -Device $(MCU_ID) -if SWD -Speed 2400 -RTTTelnetPort 9999 -autoconnect 1
