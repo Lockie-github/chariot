@@ -20,7 +20,9 @@
 #include "main.h"
 #include "tim.h"
 #include "gpio.h"
+#include <stdlib.h>
 #include "SEGGER_RTT.h"
+#include "float.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -42,7 +44,12 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
-
+/* 当前时刻总计数值 */
+__IO int32_t Capture_Count = 0;
+/* 上一时刻总计数值 */
+__IO int32_t Last_Count = 0;
+/* 电机转轴转速 */
+__IO float Shaft_Speed = 0  ;
 /* USER CODE BEGIN PV */
 
 /* USER CODE END PV */
@@ -81,7 +88,9 @@ int main(void)
   SystemClock_Config();
 
   /* USER CODE BEGIN SysInit */
+	__HAL_RCC_SYSCFG_CLK_ENABLE();
 
+  HAL_InitTick(5);
   /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
@@ -109,9 +118,9 @@ int main(void)
     /* USER CODE BEGIN 3 */
     __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1,0);
     __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_2,32768);
-    Motor_Direction = __HAL_TIM_IS_TIM_COUNTING_DOWN(&htim3);
-    HAL_Delay(100);
-    myprintf("Motor_Direction : %d\n",Motor_Direction);
+    // Motor_Direction = __HAL_TIM_IS_TIM_COUNTING_DOWN(&htim3);
+    // HAL_Delay(100);
+    // myprintf("Motor_Direction : %0.2f\n",Shaft_Speed);
 
     // HAL_Delay(50);
     // myprintf("tim1：%d\n",__HAL_TIM_GET_COUNTER(&htim1));
@@ -119,7 +128,7 @@ int main(void)
     // myprintf("tim3：%d\n",__HAL_TIM_GET_COUNTER(&htim3));
     // myprintf("\n");
  
-  //  myprintf("7");
+    //  myprintf("7");
     
     
     
@@ -173,7 +182,33 @@ int main(void)
   }
   /* USER CODE END 3 */
 }
+void HAL_SYSTICK_Callback(void)
+{
+  static uint16_t i = 0;
+  i++;
+  if(i == 100)/* 100ms计算一次 */
+  {
+    /* 电机旋转方向 = 计数器计数方向 */
+    Motor_Direction = __HAL_TIM_IS_TIM_COUNTING_DOWN(&htim3);
+    
+    /* 当前时刻总计数值 = 计数器值 + 计数溢出次数 * ENCODER_TIM_PERIOD  */
+    Capture_Count =__HAL_TIM_GET_COUNTER(&htim3) + (Encoder_Overflow_Count * 65535);
+    
+    /* 转轴转速 = 单位时间内的计数值 / 编码器总分辨率 * 时间系数  */
+    Shaft_Speed = (float)(Capture_Count - Last_Count) ;/// 13 )* 10 ;
 
+    // myprintf("电机方向：%d\n", Motor_Direction);
+    myprintf("jshu：%d\n", Capture_Count);
+
+    // myprintf("单位时间内有效计数值：%d\n", Capture_Count- Last_Count )- Last_Count);/* 单位时间计数值 = 当前时刻总计数值 - 上一时刻总计数值 */
+    myprintf("电机转轴处转速：%f 转/秒 \n", Shaft_Speed);
+    // myprintf("电机输出轴转速：%.2f 转/秒 \n", Shaft_Speed/30);/* 输出轴转速 = 转轴转速 / 减速比 */
+    
+    /* 记录当前总计数值，供下一时刻计算使用 */
+    Last_Count = Capture_Count;
+    i = 0;
+  }
+}
 /**
   * @brief System Clock Configuration
   * @retval None
@@ -248,3 +283,4 @@ void assert_failed(uint8_t *file, uint32_t line)
   /* USER CODE END 6 */
 }
 #endif /* USE_FULL_ASSERT */
+
