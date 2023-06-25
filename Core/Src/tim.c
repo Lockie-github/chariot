@@ -123,7 +123,7 @@ void MX_TIM3_Init(void)
   htim3.Instance = TIM3;
   htim3.Init.Prescaler = 0;
   htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim3.Init.Period = 50;
+  htim3.Init.Period = 65535;
   htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   sConfig.EncoderMode = TIM_ENCODERMODE_TI12;
@@ -314,7 +314,7 @@ void change_period(TIM_HandleTypeDef* timHandle,uint32_t period)
  {
   // myprintf("into timcallback");
 
-    if(htim==(&htim3))//因为我采用的是定时器6
+    if(htim==(&htim3))
     {
 
       /* 判断当前计数器计数方向 */
@@ -325,7 +325,7 @@ void change_period(TIM_HandleTypeDef* timHandle,uint32_t period)
       else
         /* 上溢 */
         Encoder_Overflow_Count++; 
-      myprintf("%d\n",Encoder_Overflow_Count);
+      // myprintf("%d\n",Encoder_Overflow_Count);
   }
  }
 /* USER CODE END 1 */
