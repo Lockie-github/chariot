@@ -66,7 +66,24 @@ void Error_Handler(void);
 #define TIM3_CH2_ENCODER_Pin GPIO_PIN_5
 #define TIM3_CH2_ENCODER_GPIO_Port GPIOB
 
+
 /* USER CODE BEGIN Private defines */
+///<获取速度的时间间隔（ms）
+#define GET_SPEED_INTERVAL 100
+
+#define PI 3.1415
+
+///<轮子的半径（m）
+#define WHEEL_D 0.065
+
+///<编码器分辨率
+#define ENCODER_RESOLUTION 13
+
+///<减速比
+#define REDCUTION_RATIO 78
+
+///<编码器倍频因子
+#define MULTIPLICATION_FACTOR 4
 
 /* USER CODE END Private defines */
 
