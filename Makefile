@@ -204,3 +204,6 @@ erase:
 run:
 	@echo "Try to run MCU"
 	-JLinkExe  -Device $(MCU_ID) -if SWD -Speed 2400 -RTTTelnetPort 9999 -autoconnect 1
+
+rtt:
+	while true ; do sleep 1; telnet 127.0.0.1 9999; done
