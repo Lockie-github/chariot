@@ -50,6 +50,8 @@ __IO int32_t Capture_Count = 0;
 __IO int32_t Last_Count = 0;
 /* 电机转轴转速 */
 __IO float Shaft_Speed = 0  ;
+///< 角速度
+__IO float angular_velocity = 0.0  ;
 /* USER CODE BEGIN PV */
 
 /* USER CODE END PV */
@@ -194,11 +196,18 @@ void HAL_SYSTICK_Callback(void)
     /* 当前时刻总计数值 = 计数器值 + 计数溢出次数 * ENCODER_TIM_PERIOD  */
     Capture_Count =__HAL_TIM_GET_COUNTER(&htim3) + (Encoder_Overflow_Count * 65535);
     
-    /* 转轴转速 = 单位时间内的计数值 / 编码器总分辨率 * 时间系数  */
-    Shaft_Speed = (float)(Capture_Count - Last_Count) ;/// 13 )* 10 ;
+   /*角速度 = 单位时间内的计数值/（单圈脉冲数*单位时间）*/
+   angular_velocity = (float)(Capture_Count - Last_Count)/(13*4*0.1);
+
+    Shaft_Speed = (float)(Capture_Count - Last_Count) / 13*4 * 10 ;
 
     // myprintf("电机方向：%d\n", Motor_Direction);
     myprintf("jshu：%d\n", Capture_Count);
+    myprintf("last:%d\n", Last_Count);
+    myprintf("angular_velocity:%f\n", angular_velocity);
+
+    // myprintf("DD:%d\n", Capture_Count - Last_Count);
+
 
     // myprintf("单位时间内有效计数值：%d\n", Capture_Count- Last_Count )- Last_Count);/* 单位时间计数值 = 当前时刻总计数值 - 上一时刻总计数值 */
     myprintf("电机转轴处转速：%f 转/秒 \n", Shaft_Speed);
