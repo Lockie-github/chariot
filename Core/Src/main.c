@@ -49,9 +49,10 @@ __IO int32_t Capture_Count = 0;
 /* 上一时刻总计数值 */
 __IO int32_t Last_Count = 0;
 /* 电机转轴转速 */
-__IO float Shaft_Speed = 0  ;
+__IO float Shaft_Speed = 0;
 ///< 角速度
-__IO float angular_velocity = 0.0  ;
+__IO float angular_velocity = 0.0f;
+__IO float linear_velocity = 0.0f;
 /* USER CODE BEGIN PV */
 
 /* USER CODE END PV */
@@ -188,7 +189,7 @@ void HAL_SYSTICK_Callback(void)
 {
   static uint16_t i = 0;
   i++;
-  if(i == 100)/* 100ms计算一次 */
+  if(i == GET_SPEED_INTERVAL)/* 100ms计算一次 */
   {
     /* 电机旋转方向 = 计数器计数方向 */
     Motor_Direction = __HAL_TIM_IS_TIM_COUNTING_DOWN(&htim3);
@@ -196,22 +197,19 @@ void HAL_SYSTICK_Callback(void)
     /* 当前时刻总计数值 = 计数器值 + 计数溢出次数 * ENCODER_TIM_PERIOD  */
     Capture_Count =__HAL_TIM_GET_COUNTER(&htim3) + (Encoder_Overflow_Count * 65535);
     
-   /*角速度 = 单位时间内的计数值/（单圈脉冲数*单位时间）*/
-   angular_velocity = (float)(Capture_Count - Last_Count)/(13*4*0.1);
+    /*角速度 = 单位时间内的计数值/（单圈脉冲数*单位时间）*/
+    angular_velocity = (float)(Capture_Count - Last_Count)/(ENCODER_RESOLUTION*MULTIPLICATION_FACTOR*GET_SPEED_INTERVAL/1000);
+    
+    /*线速度 = 角速度*轮子的直径*PI/减速比(m/s)*/
+    linear_velocity = angular_velocity * WHEEL_D * PI/REDCUTION_RATIO;
 
-    Shaft_Speed = (float)(Capture_Count - Last_Count) / 13*4 * 10 ;
+    // Shaft_Speed = (float)(Capture_Count - Last_Count) / 13*4 * 10 ;
 
     // myprintf("电机方向：%d\n", Motor_Direction);
     myprintf("jshu：%d\n", Capture_Count);
     myprintf("last:%d\n", Last_Count);
     myprintf("angular_velocity:%f\n", angular_velocity);
 
-    // myprintf("DD:%d\n", Capture_Count - Last_Count);
-
-
-    // myprintf("单位时间内有效计数值：%d\n", Capture_Count- Last_Count )- Last_Count);/* 单位时间计数值 = 当前时刻总计数值 - 上一时刻总计数值 */
-    myprintf("电机转轴处转速：%f 转/秒 \n", Shaft_Speed);
-    // myprintf("电机输出轴转速：%.2f 转/秒 \n", Shaft_Speed/30);/* 输出轴转速 = 转轴转速 / 减速比 */
     
     /* 记录当前总计数值，供下一时刻计算使用 */
     Last_Count = Capture_Count;
