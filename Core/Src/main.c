@@ -23,7 +23,7 @@
 #include <stdlib.h>
 #include "SEGGER_RTT.h"
 #include "float.h"
-
+#include "charoit_abstract.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
@@ -51,8 +51,8 @@ __IO int32_t Last_Count = 0;
 /* 电机转轴转速 */
 __IO float Shaft_Speed = 0;
 ///< 角速度
-__IO float angular_velocity = 0.0f;
-__IO float linear_velocity = 0.0f;
+// __IO float angular_velocity = 0.0f;
+// __IO float linear_velocity = 0.0f;
 /* USER CODE BEGIN PV */
 
 /* USER CODE END PV */
@@ -99,7 +99,7 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   // htim1.Init.Period = 32768;
-
+  motor_init();
   MX_TIM1_Init();
   MX_TIM3_Init();
 
@@ -198,17 +198,19 @@ void HAL_SYSTICK_Callback(void)
     Capture_Count =__HAL_TIM_GET_COUNTER(&htim3) + (Encoder_Overflow_Count * 65535);
     
     /*角速度 = 单位时间内的计数值/（单圈脉冲数*单位时间）*/
-    angular_velocity = (float)(Capture_Count - Last_Count)/(ENCODER_RESOLUTION*MULTIPLICATION_FACTOR*GET_SPEED_INTERVAL/1000);
+    motor.angular_velocity = (float)(Capture_Count - Last_Count)/(ENCODER_RESOLUTION*MULTIPLICATION_FACTOR*GET_SPEED_INTERVAL/1000);
     
     /*线速度 = 角速度*轮子的直径*PI/减速比(m/s)*/
-    linear_velocity = angular_velocity * WHEEL_D * PI/REDCUTION_RATIO;
+    motor.linear_velocity = motor.angular_velocity * WHEEL_D * PI/REDCUTION_RATIO;
 
     // Shaft_Speed = (float)(Capture_Count - Last_Count) / 13*4 * 10 ;
 
     // myprintf("电机方向：%d\n", Motor_Direction);
-    myprintf("jshu：%d\n", Capture_Count);
-    myprintf("last:%d\n", Last_Count);
-    myprintf("angular_velocity:%f\n", angular_velocity);
+    // myprintf("jshu：%d\n", Capture_Count);
+    // myprintf("last:%d\n", Last_Count);
+    myprintf("angular_velocity:%f\n", motor.angular_velocity);
+    myprintf("linear_velocity:%f\n", motor.linear_velocity);
+
 
     
     /* 记录当前总计数值，供下一时刻计算使用 */
